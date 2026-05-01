@@ -1,0 +1,37 @@
+name: Eredivisie Excel bijwerken
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # elke nacht om 07:00 UTC (09:00 Nederlandse tijd)
+  workflow_dispatch:        # ook handmatig te starten via GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Bestanden ophalen
+        uses: actions/checkout@v4
+
+      - name: Python instellen
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Pakketten installeren
+        run: pip install requests openpyxl
+
+      - name: Excel genereren
+        env:
+          API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+        run: python maak_excel.py
+
+      - name: Excel bestand opslaan in GitHub
+        run: |
+          git config user.name "Eredivisie Bot"
+          git config user.email "bot@github.com"
+          git add Eredivisie_Live.xlsx
+          git diff --staged --quiet || git commit -m "Eredivisie bijgewerkt $(date '+%d-%m-%Y %H:%M')"
+          git push
